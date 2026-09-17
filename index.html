@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VeraTrack · Centro de Control</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="assets/css/demo.css">
+</head>
+<body>
+
+  <!-- Pantalla de carga -->
+  <div class="loader" id="loader">
+    <img src="assets/img/logo.png" alt="Veraleza">
+    <div class="ltxt">Conectando con la flota…</div>
+    <div class="lbar"><i id="loaderBar"></i></div>
+  </div>
+
+  <!-- Barra superior -->
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <img class="brand-banner" src="assets/img/logoBANNER-96.png" alt="Veraleza" width="445" height="96">
+    </a>
+    <nav class="nav">
+      <a href="index.html" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+        <span>Centro de control</span>
+      </a>
+      <a href="flota.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h13v9H1zM14 11h4l4 3v3h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>
+        <span>Flota</span>
+      </a>
+      <a href="camaras.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4 6l16 12M20 6L4 18M2 12h20"/></svg>
+        <span>Cámaras frío</span>
+      </a>
+    </nav>
+
+    <div class="topbar-right">
+      <div class="kpis" id="kpis">
+        <div class="kpi k-ok"><div class="v" id="kMoving">–</div><div class="l">En ruta</div></div>
+        <div class="kpi"><div class="v" id="kStopped">–</div><div class="l">Detenidos</div></div>
+        <div class="kpi k-cold"><div class="v" id="kFrigo">–</div><div class="l">Frigoríficos</div></div>
+        <div class="kpi k-err"><div class="v" id="kAlerts">–</div><div class="l">Alertas</div></div>
+        <div class="kpi k-brand"><div class="v" id="kSpeed">–</div><div class="l">Vel. media</div></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mapa + paneles -->
+  <div class="map-wrap">
+    <div id="map"></div>
+
+    <button class="panel-toggle" id="panelToggle" title="Mostrar flota">☰</button>
+
+    <aside class="side-panel" id="sidePanel">
+      <div class="panel-head">
+        <div class="panel-title">
+          <h2>Flota en directo</h2>
+          <span class="count" id="listCount">50 vehículos</span>
+        </div>
+        <input type="search" class="search" id="search" placeholder="Buscar matrícula, chófer, carga…">
+        <div class="chips" id="chips">
+          <button class="chip active" data-f="all">Todos</button>
+          <button class="chip" data-f="moving">En ruta</button>
+          <button class="chip" data-f="stopped">Parados</button>
+          <button class="chip" data-f="frigo">❄ Frío</button>
+          <button class="chip chip-alert" data-f="alert">⚠ Alertas</button>
+        </div>
+      </div>
+      <div class="vlist" id="vlist"></div>
+    </aside>
+
+    <div class="event-feed" id="eventFeed"></div>
+
+    <aside class="veh-detail" id="vehDetail"></aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/sim.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

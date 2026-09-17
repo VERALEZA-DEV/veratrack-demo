@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VeraTrack · Flota</title>
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/demo.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <img class="brand-banner" src="assets/img/logoBANNER-96.png" alt="Veraleza" width="445" height="96">
+    </a>
+    <nav class="nav">
+      <a href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+        <span>Centro de control</span>
+      </a>
+      <a href="flota.html" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8h13v9H1zM14 11h4l4 3v3h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>
+        <span>Flota</span>
+      </a>
+      <a href="camaras.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M4 6l16 12M20 6L4 18M2 12h20"/></svg>
+        <span>Cámaras frío</span>
+      </a>
+    </nav>
+  </header>
+
+  <main class="page-body">
+    <div class="page-head">
+      <div>
+        <h1>Gestión de flota</h1>
+        <div class="sub">Vehículos y chóferes de Veraleza Logística</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="kpis">
+        <div class="kpi k-brand"><div class="v" id="sTotal">–</div><div class="l">Vehículos</div></div>
+        <div class="kpi k-ok"><div class="v" id="sDisp">–</div><div class="l">Disponibilidad</div></div>
+        <div class="kpi k-cold"><div class="v" id="sFrigo">–</div><div class="l">Frigoríficos</div></div>
+        <div class="kpi"><div class="v" id="sDrivers">–</div><div class="l">Chóferes</div></div>
+      </div>
+    </div>
+
+    <div class="page-head" style="margin-bottom:8px">
+      <input type="search" class="search" id="search" style="max-width:360px" placeholder="Buscar matrícula, modelo, chófer…">
+      <div class="chips" id="chips" style="margin-top:0">
+        <button class="chip active" data-f="all">Todos</button>
+        <button class="chip" data-f="frigo">❄ Frigoríficos</button>
+        <button class="chip" data-f="seco">Carga seca</button>
+        <button class="chip" data-f="ruta">En ruta</button>
+        <button class="chip" data-f="taller">Taller</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn primary" id="btnNew" style="flex:none;padding:14px 26px">＋ Nuevo vehículo</button>
+    </div>
+
+    <div class="section-title">Vehículos <span id="truckCount"></span></div>
+    <div class="truck-grid" id="truckGrid"></div>
+
+    <div class="section-title">Chóferes <span id="driverCount"></span></div>
+    <div class="driver-grid" id="driverGrid"></div>
+  </main>
+
+  <!-- Modal nuevo vehículo -->
+  <div class="modal-back" id="modalNew">
+    <div class="modal">
+      <h3>Alta de vehículo</h3>
+      <div class="form-grid">
+        <div class="field"><label>Matrícula</label><input id="fPlate" placeholder="0000 XXX"></div>
+        <div class="field"><label>Modelo</label>
+          <select id="fModel"></select>
+        </div>
+        <div class="field"><label>Tipo de semirremolque</label>
+          <select id="fType">
+            <option value="frigo">Frigorífico</option>
+            <option value="lona">Lona / Tauliner</option>
+            <option value="furgon">Furgón seco</option>
+            <option value="cisterna">Cisterna alimentaria</option>
+          </select>
+        </div>
+        <div class="field"><label>Chófer asignado</label><select id="fDriver"></select></div>
+        <div class="field full"><label>Carga habitual</label><input id="fCargo" placeholder="Cítricos, plátano, tomate…"></div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnCancel">Cancelar</button>
+        <button class="btn primary" id="btnSave">Guardar vehículo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal detalle vehículo -->
+  <div class="modal-back" id="modalDetail">
+    <div class="modal" id="modalDetailBody"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/flota.js"></script>
+</body>
+</html>

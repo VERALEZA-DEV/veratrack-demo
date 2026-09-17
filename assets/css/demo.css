@@ -1,0 +1,601 @@
+/* ══════════════════════════════════════════════════════════════
+   VeraTrack DEMO FERIA — Sistema de diseño (tema claro)
+   Paleta corporativa Veraleza · blancos, cremas y verdes
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Marca Veraleza */
+  --olive-700: #6A6B27;
+  --olive-600: #7A7B2E;
+  --olive-500: #848635;
+  --olive-400: #A8AA5F;
+  --olive-300: #C6C98A;
+  --olive-200: #DDE1B2;
+  --olive-100: #EFEEC8;
+  --verde-app: #8E8B30;          /* verde original de VeraTrack */
+  --cream-50:  #FCFBF7;
+  --cream-100: #F5F2E8;
+  --cream-200: #EBE7D9;
+  --cream-300: #D8D3C2;
+
+  /* Verdes Veraleza (gama fría) */
+  --vera-900: #0E3D30;
+  --vera-700: #1E7556;
+  --vera-500: #3AAE83;
+  --vera-200: #C9ECDD;
+  --vera-100: #E5F5EC;
+
+  /* Superficies claras (mismos nombres que el tema original) */
+  --bg-0: #F1EEE3;               /* fondo de página (crema) */
+  --bg-1: #FFFFFF;               /* tarjetas */
+  --bg-2: #FAF8F0;               /* sub-superficies */
+  --bg-3: #ECE8DA;               /* hover / pistas de gauge */
+  --line: #EAE5D6;
+  --line-strong: #D9D3C0;
+
+  --text: #10221C;
+  --text-2: #3E4A42;
+  --text-3: #83887A;
+
+  /* Semánticos (paleta VeraFact) */
+  --ok:      #1E7556;
+  --ok-soft: #D9F0E4;
+  --warn:      #B8700F;
+  --warn-soft: #FCEFCE;
+  --err:      #B0342C;
+  --err-soft: #FADBDB;
+  --info:      #1F5F8B;
+  --info-soft: #DEEEFA;
+  --cold:      #1E7FA6;
+  --cold-soft: #D9EEF7;
+
+  --r-sm: 8px;  --r: 12px;  --r-lg: 18px;  --r-pill: 999px;
+  --sh-card: 0 2px 14px rgba(70, 51, 31, .09);
+  --sh-pop:  0 14px 44px rgba(70, 51, 31, .22);
+
+  --font: 'Poppins', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  --topbar-h: 72px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg-0);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+button { font-family: inherit; cursor: pointer; }
+
+/* ══════════ Barra superior (verde corporativo, como VeraTrack) ══════════ */
+.topbar {
+  height: var(--topbar-h);
+  display: flex; align-items: center; gap: 24px;
+  padding: 0 24px;
+  background: linear-gradient(180deg, #8B8D33, #767A2A);
+  border-bottom: 1px solid #5F6222;
+  box-shadow: 0 2px 14px rgba(70, 60, 20, .25);
+  position: relative; z-index: 1200;
+}
+.brand { display: flex; align-items: center; text-decoration: none; }
+.brand .brand-banner {
+  height: 32px; width: auto;
+  filter: brightness(0) invert(1);   /* logo corporativo en blanco sobre la barra verde */
+}
+
+.nav { display: flex; gap: 6px; margin-left: 12px; }
+.nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px; border-radius: var(--r-pill);
+  color: rgba(255,255,255,.88); text-decoration: none;
+  font-size: 15px; font-weight: 600;
+  transition: background .25s, color .25s;
+  min-height: 48px;
+}
+.nav a svg { width: 20px; height: 20px; flex: none; }
+.nav a:hover { background: rgba(255,255,255,.16); color: #fff; }
+.nav a.active {
+  background: #fff; color: var(--olive-700);
+  box-shadow: 0 2px 12px rgba(40, 40, 10, .28);
+}
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 18px; }
+.live-pill {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; border-radius: var(--r-pill);
+  background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35);
+  font-size: 13px; font-weight: 700; letter-spacing: 1.5px; color: #fff;
+}
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: #8FE7B8; animation: pulse 1.6s infinite; }
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(143,231,184,.6); }
+  70%  { box-shadow: 0 0 0 10px rgba(143,231,184,0); }
+  100% { box-shadow: 0 0 0 0 rgba(143,231,184,0); }
+}
+.clock { font-family: var(--mono); font-size: 20px; font-weight: 600; color: rgba(255,255,255,.92); min-width: 96px; text-align: right; }
+
+/* ══════════ KPIs ══════════ */
+.kpis { display: flex; gap: 14px; }
+.kpi {
+  min-width: 118px; padding: 12px 18px;
+  background: var(--bg-1); border: 1px solid var(--line-strong);
+  border-radius: var(--r); text-align: center;
+  box-shadow: var(--sh-card);
+}
+.kpi .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; color: var(--text); }
+.kpi .l { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1.2px; margin-top: 2px; }
+.kpi.k-ok .v { color: var(--ok); }
+.kpi.k-warn .v { color: var(--warn); }
+.kpi.k-err .v { color: var(--err); }
+.kpi.k-cold .v { color: var(--cold); }
+.kpi.k-brand .v { color: var(--olive-600); }
+
+/* KPIs dentro de la barra verde: tarjetas blancas sólidas con valores intensos */
+.topbar .kpi {
+  background: #fff; border-color: rgba(60, 60, 20, .25);
+  box-shadow: 0 2px 10px rgba(40, 40, 10, .28);
+  padding: 9px 18px; min-width: 112px;
+}
+.topbar .kpi .l { color: #6E7263; }
+
+/* ══════════ Layout mapa ══════════ */
+.map-wrap { position: relative; height: calc(100dvh - var(--topbar-h)); }
+#map { position: absolute; inset: 0; background: var(--bg-0); }
+.leaflet-container { font-family: var(--font); background: #AAD3DF; }   /* agua OSM */
+
+/* Clusters de vehículos (mismo estilo que VeraTrack) */
+.leaflet-cluster-icon .cluster-wrap { position: relative; display: inline-block; }
+.leaflet-cluster-icon .cluster-badge {
+  width: 32px; height: 32px; line-height: 32px;
+  border-radius: 50%; text-align: center;
+  font-weight: 600; font-size: 14px; color: #fff;
+  background: var(--verde-app);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+  border: 2px solid rgba(255, 255, 255, .85);
+  box-sizing: border-box;
+}
+.leaflet-cluster-icon .cluster-alert {
+  position: absolute; top: -6px; right: -6px;
+  width: 18px; height: 18px; line-height: 18px;
+  border-radius: 50%; text-align: center;
+  background: #dc3545; color: #fff;
+  font-weight: 800; font-size: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .35);
+}
+.leaflet-control-attribution { background: rgba(255,255,255,.75) !important; color: var(--text-3) !important; }
+.leaflet-control-attribution a { color: var(--text-2) !important; }
+.leaflet-control-zoom a {
+  background: #fff !important; color: var(--text) !important;
+  border-color: var(--line-strong) !important;
+  width: 44px !important; height: 44px !important; line-height: 44px !important; font-size: 22px !important;
+}
+/* dejar sitio al panel lateral flotante */
+.leaflet-bottom.leaflet-left { left: 404px; }
+@media (max-width: 760px) { .leaflet-bottom.leaflet-left { left: 0; } }
+
+/* Panel lateral flotante */
+.side-panel {
+  position: absolute; top: 20px; left: 20px; bottom: 20px;
+  width: 384px; z-index: 1000;
+  display: flex; flex-direction: column;
+  /* Opaco a propósito: un backdrop-filter aquí obliga al navegador a volver a
+     desenfocar el mapa en CADA fotograma mientras los camiones se mueven. */
+  background: #FDFCF7;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-card);
+  overflow: hidden;
+  transition: transform .35s ease;
+}
+.side-panel.hidden { transform: translateX(calc(-100% - 28px)); }
+.panel-head { padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
+.panel-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+.panel-title h2 { font-size: 17px; font-weight: 700; }
+.panel-title .count { font-size: 13px; color: var(--text-3); font-weight: 500; }
+.search {
+  width: 100%; padding: 13px 16px;
+  background: var(--bg-1); border: 1px solid var(--line-strong); border-radius: var(--r);
+  color: var(--text); font-family: inherit; font-size: 15px; outline: none;
+}
+.search::placeholder { color: var(--text-3); }
+.search:focus { border-color: var(--olive-500); box-shadow: 0 0 0 3px rgba(132,134,53,.15); }
+
+.chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.chip {
+  padding: 9px 15px; border-radius: var(--r-pill);
+  background: var(--bg-1); border: 1px solid var(--line-strong);
+  color: var(--text-2); font-size: 13px; font-weight: 600;
+  min-height: 40px;
+  transition: all .2s;
+}
+.chip:hover { color: var(--text); border-color: var(--olive-400); }
+.chip.active { background: var(--olive-500); border-color: var(--olive-500); color: #fff; }
+.chip.chip-alert.active { background: var(--err); border-color: var(--err); }
+
+.vlist { flex: 1; overflow-y: auto; padding: 10px; }
+.vlist::-webkit-scrollbar { width: 8px; }
+.vlist::-webkit-scrollbar-thumb { background: var(--cream-300); border-radius: 4px; }
+
+.vcard {
+  position: relative;
+  display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center;
+  padding: 13px 14px; margin-bottom: 8px;
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: var(--r); cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.vcard:hover { border-color: var(--olive-400); background: var(--cream-50); }
+.vcard.selected { border-color: var(--olive-500); background: var(--cream-50); box-shadow: 0 0 0 1px var(--olive-500); }
+.vcard.alerting { border-color: rgba(176,52,44,.55); }
+/* El halo late con opacity (se compone en GPU) en vez de con box-shadow,
+   que obligaría a repintar la tarjeta en cada fotograma, siempre. */
+.vcard.alerting::after {
+  content: ''; position: absolute; inset: -4px; z-index: -1;
+  border-radius: 16px; background: rgba(176,52,44,.18);
+  pointer-events: none; animation: cardAlert 1.4s infinite;
+}
+@keyframes cardAlert { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+.vcard .vicon {
+  width: 44px; height: 44px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--cream-100); font-size: 20px;
+}
+.vcard .vicon svg { width: 26px; height: 26px; }
+.vcard .vmain { min-width: 0; }
+.vcard .vplate { font-family: var(--mono); font-weight: 700; font-size: 15px; letter-spacing: .5px; }
+.vcard .vsub { font-size: 12px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vcard .vdata { text-align: right; }
+.vcard .vspeed { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.vcard .vspeed small { font-size: 11px; color: var(--text-3); font-weight: 500; }
+.vcard .vtemp { font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--cold); }
+.vcard .vtemp.hot { color: var(--err); }
+.vcard .vstopped { font-size: 12px; color: var(--text-3); font-weight: 600; }
+
+/* Marcadores de vehículo — el furgón de perfil de VeraTrack.
+   (posición interpolada por JS, sin transition CSS)
+   Verde = en ruta (contacto dado) · rojo = parado o en alerta, igual que en la
+   app real; la alerta añade la insignia "!" y el latido rojo. */
+.veh-marker { will-change: transform; }
+.veh-marker .veh-face {
+  width: 100%; height: 100%;
+  transform-origin: center bottom;
+  transition: transform .35s ease;   /* el volteo al cambiar de sentido */
+}
+.veh-marker .veh-img {
+  width: 100%; height: 100%;
+  background: url(../img/van-verde.png) center/contain no-repeat;
+}
+.veh-marker.stopped .veh-img,
+.veh-marker.alert   .veh-img { background-image: url(../img/van-rojo.png); }
+/* Sin filter en el estado normal: un drop-shadow sobre 50 iconos que se mueven
+   15 veces por segundo obliga a re-rasterizar cada uno en cada fotograma.
+   Se mantiene solo en alerta y en el seleccionado, 1-3 furgones como mucho. */
+.veh-marker.alert .veh-img { filter: drop-shadow(0 0 5px rgba(176,52,44,.9)); }
+.veh-marker.sel   .veh-img { filter: drop-shadow(0 2px 4px rgba(45, 40, 15, .55)); }
+.veh-marker .ring {
+  position: absolute; left: 50%; bottom: 0;
+  width: 44px; height: 44px; margin: 0 0 -22px -22px;
+  border-radius: 50%; border: 2px solid var(--err); opacity: 0;
+}
+.veh-marker.alert .ring { animation: ringPulse 1.4s infinite; }
+@keyframes ringPulse {
+  0% { transform: scale(.45); opacity: .9; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+/* Insignia de alerta, como en VeraTrack (siempre en el DOM, oculta si no toca:
+   así el HTML del icono es constante y basta con cambiarle la clase) */
+.veh-marker .veh-badge {
+  display: none;
+  position: absolute; top: -7px; right: -7px;
+  width: 16px; height: 16px; line-height: 15px;
+  border-radius: 50%; text-align: center;
+  background: #dc3545; color: #fff;
+  font-weight: 800; font-size: 11px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+.veh-marker.alert .veh-badge { display: block; }
+
+/* Popup Leaflet */
+.leaflet-popup-content-wrapper {
+  background: #fff; color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: var(--r);
+  box-shadow: var(--sh-pop); font-family: var(--font);
+}
+.leaflet-popup-tip { background: #fff; }
+.leaflet-popup-content { margin: 14px 16px; }
+
+/* Ficha de vehículo (drawer inferior derecha) */
+.veh-detail {
+  position: absolute; right: 20px; bottom: 20px; z-index: 1000;
+  width: 400px; max-height: calc(100% - 40px);
+  background: #FDFCF7;                       /* opaco: ver nota en .side-panel */
+  border: 1px solid var(--line-strong); border-radius: var(--r-lg);
+  box-shadow: var(--sh-pop);
+  overflow: hidden auto;
+  transform: translateY(calc(100% + 28px)); transition: transform .35s ease;
+}
+.veh-detail.open { transform: translateY(0); }
+.vd-head { display: flex; align-items: center; gap: 14px; padding: 18px 20px 14px; border-bottom: 1px solid var(--line); }
+.vd-plate { font-family: var(--mono); font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+.vd-flag { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: var(--cream-200); color: var(--text-2); }
+.vd-state { margin-left: auto; font-size: 12.5px; font-weight: 700; padding: 7px 13px; border-radius: var(--r-pill); }
+.vd-state.ok { background: var(--ok-soft); color: var(--ok); }
+.vd-state.stop { background: var(--cream-200); color: var(--text-2); }
+.vd-state.alert { background: var(--err-soft); color: var(--err); }
+.vd-close {
+  background: var(--cream-200); border: none; color: var(--text-2);
+  width: 40px; height: 40px; border-radius: 50%; font-size: 18px;
+}
+.vd-body { padding: 16px 20px 20px; }
+.vd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.vd-cell { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; }
+.vd-cell .l { font-size: 10.5px; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; }
+.vd-cell .v { font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.vd-cell .v small { font-size: 12px; color: var(--text-3); font-weight: 500; white-space: nowrap; }
+.vd-cell.wide { grid-column: 1 / -1; }
+.vd-cell .v.cold { color: var(--cold); } .vd-cell .v.hot { color: var(--err); }
+.vd-spark { width: 100%; height: 56px; margin-top: 6px; }
+.vd-actions { display: flex; gap: 10px; }
+.btn {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 14px 18px; border-radius: var(--r); border: 1px solid var(--line-strong);
+  background: var(--bg-1); color: var(--text); font-size: 15px; font-weight: 600;
+  min-height: 50px; transition: all .2s;
+}
+.btn:hover { border-color: var(--olive-400); }
+.btn.primary { background: var(--olive-500); border-color: var(--olive-500); color: #fff; }
+.btn.primary:hover { background: var(--olive-600); }
+.btn.primary.following { background: var(--err); border-color: var(--err); }
+
+/* Feed de eventos */
+.event-feed {
+  position: absolute; right: 20px; top: 20px; z-index: 999;
+  width: 400px; max-height: 42%;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.event {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 13px 16px; border-radius: var(--r);
+  background: #FDFCF7;                       /* opaco: ver nota en .side-panel */
+  border: 1px solid var(--line-strong);
+  box-shadow: var(--sh-card);
+  font-size: 13.5px; line-height: 1.4;
+  animation: eventIn .4s ease;
+  pointer-events: auto;
+}
+@keyframes eventIn { from { opacity: 0; transform: translateX(30px); } }
+.event .dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: none; }
+.event.info .dot { background: var(--info); }
+.event.ok .dot { background: var(--ok); }
+.event.alert .dot { background: var(--err); box-shadow: 0 0 8px rgba(176,52,44,.7); }
+.event.alert { border-color: rgba(176,52,44,.45); background: #FFF7F6; }
+.event .etime { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-3); flex: none; }
+
+/* Botón replegar panel */
+.panel-toggle {
+  position: absolute; top: 20px; left: 20px; z-index: 1001;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--olive-500); border: none; color: #fff; font-size: 20px;
+  box-shadow: var(--sh-card);
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.panel-toggle.show { opacity: 1; pointer-events: auto; }
+
+/* Pantalla de carga */
+.loader {
+  position: fixed; inset: 0; z-index: 3000;
+  background: var(--cream-100);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+  transition: opacity .6s;
+}
+.loader.done { opacity: 0; pointer-events: none; }
+.loader img { height: 88px; animation: loaderSpin 2.4s ease-in-out infinite; }
+@keyframes loaderSpin { 50% { transform: rotate(180deg) scale(1.06); } }
+.loader .ltxt { font-size: 15px; color: var(--text-2); letter-spacing: 2px; text-transform: uppercase; }
+.loader .lbar { width: 280px; height: 6px; background: var(--cream-300); border-radius: 3px; overflow: hidden; }
+.loader .lbar i { display: block; height: 100%; width: 0%; background: var(--olive-500); border-radius: 3px; transition: width .3s; }
+
+/* ══════════ Páginas de contenido (flota / cámaras) ══════════ */
+.page-body {
+  height: calc(100dvh - var(--topbar-h));
+  overflow-y: auto;
+  padding: 28px 32px 48px;
+}
+.page-body::-webkit-scrollbar { width: 10px; }
+.page-body::-webkit-scrollbar-thumb { background: var(--cream-300); border-radius: 5px; }
+
+.page-head { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+.page-head h1 { font-size: 26px; font-weight: 700; }
+.page-head .sub { color: var(--text-3); font-size: 14px; }
+.page-head .spacer { flex: 1; }
+
+.section-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-3); margin: 30px 0 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--line-strong); }
+
+/* Tarjetas flota */
+.truck-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+.truck-card {
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 18px;
+  box-shadow: var(--sh-card);
+  cursor: pointer; transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.truck-card:hover { border-color: var(--olive-400); transform: translateY(-2px); box-shadow: 0 6px 22px rgba(70,51,31,.14); }
+.tc-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.tc-plate { font-family: var(--mono); font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+.tc-badge {
+  margin-left: auto; font-size: 11.5px; font-weight: 700;
+  padding: 6px 12px; border-radius: var(--r-pill);
+}
+.tc-badge.ok { background: var(--ok-soft); color: var(--ok); }
+.tc-badge.stop { background: var(--warn-soft); color: var(--warn); }
+.tc-badge.taller { background: var(--err-soft); color: var(--err); }
+.tc-model { font-size: 14px; color: var(--text-2); margin-bottom: 3px; }
+.tc-meta { font-size: 12.5px; color: var(--text-3); display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
+.tc-meta b { color: var(--text-2); font-weight: 600; }
+.tc-type {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; color: var(--olive-700);
+  background: var(--olive-100); border-radius: var(--r-pill); padding: 5px 12px;
+}
+.tc-type.frio { color: var(--cold); background: var(--cold-soft); }
+
+/* Tarjetas chóferes */
+.driver-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px; }
+.driver-card {
+  background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 18px; display: flex; gap: 14px; align-items: center;
+  box-shadow: var(--sh-card);
+  cursor: pointer; transition: border-color .2s;
+}
+.driver-card:hover { border-color: var(--olive-400); }
+.avatar {
+  width: 54px; height: 54px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 18px; color: #fff;
+}
+.driver-card .dmain { min-width: 0; flex: 1; }
+.driver-card .dname { font-weight: 600; font-size: 15.5px; }
+.driver-card .dsub { font-size: 12px; color: var(--text-3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.driver-card .dstate { font-size: 11.5px; font-weight: 700; padding: 5px 11px; border-radius: var(--r-pill); flex: none; }
+.driver-card .dstate.ok { background: var(--ok-soft); color: var(--ok); }
+.driver-card .dstate.rest { background: var(--warn-soft); color: var(--warn); }
+.driver-card .dstate.off { background: var(--cream-200); color: var(--text-2); }
+
+/* Tabla genérica */
+.tbl { width: 100%; border-collapse: collapse; background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; }
+.tbl th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-3); padding: 14px 16px; border-bottom: 1px solid var(--line-strong); }
+.tbl td { padding: 13px 16px; font-size: 14px; border-bottom: 1px solid var(--line); }
+
+/* Modal */
+.modal-back {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(60, 55, 30, .38); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.modal-back.open { opacity: 1; pointer-events: auto; }
+.modal {
+  width: min(560px, 92vw); max-height: 88dvh; overflow-y: auto;
+  background: var(--bg-1); border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg); box-shadow: var(--sh-pop);
+  padding: 26px 28px;
+  transform: translateY(24px) scale(.97); transition: transform .3s;
+}
+.modal-back.open .modal { transform: none; }
+.modal h3 { font-size: 20px; margin-bottom: 18px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-grid .full { grid-column: 1 / -1; }
+.field label { display: block; font-size: 12px; color: var(--text-3); margin-bottom: 6px; font-weight: 600; }
+.field input, .field select {
+  width: 100%; padding: 13px 14px; font-family: inherit; font-size: 15px;
+  background: var(--cream-50); color: var(--text);
+  border: 1px solid var(--line-strong); border-radius: var(--r); outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--olive-500); box-shadow: 0 0 0 3px rgba(132,134,53,.15); }
+.modal .actions { display: flex; gap: 12px; margin-top: 22px; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translate(-50%, 90px);
+  z-index: 2500; padding: 15px 26px; border-radius: var(--r-pill);
+  background: var(--olive-600); color: #fff; font-weight: 600; font-size: 15px;
+  box-shadow: var(--sh-pop); transition: transform .35s ease;
+}
+.toast.show { transform: translate(-50%, 0); }
+
+/* ══════════ Cámaras frigoríficas ══════════ */
+.cam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(370px, 1fr)); gap: 18px; }
+.cam-card {
+  background: var(--bg-1); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 20px;
+  box-shadow: var(--sh-card);
+  position: relative; overflow: hidden;
+  transition: border-color .3s;
+}
+.cam-card.warn { border-color: rgba(184,112,15,.5); }
+.cam-card.alert { border-color: rgba(176,52,44,.6); }
+/* Late con opacity (GPU) en lugar de con box-shadow (repintado continuo) */
+.cam-card.alert::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  border-radius: inherit; background: rgba(176,52,44,.10);
+  pointer-events: none; animation: camAlert 1.6s infinite;
+}
+.cam-card > * { position: relative; z-index: 1; }
+@keyframes camAlert { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+.cam-head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.cam-name { font-size: 16.5px; font-weight: 700; line-height: 1.25; }
+.cam-zone { font-size: 12px; color: var(--text-3); }
+.cam-state { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 6px 12px; border-radius: var(--r-pill); flex: none; }
+.cam-state.ok { background: var(--ok-soft); color: var(--ok); }
+.cam-state.warn { background: var(--warn-soft); color: var(--warn); }
+.cam-state.alert { background: var(--err-soft); color: var(--err); }
+
+.cam-main { display: flex; align-items: center; gap: 20px; margin: 14px 0 8px; }
+.gauge { position: relative; width: 128px; height: 128px; flex: none; }
+.gauge svg { transform: rotate(-90deg); }
+.gauge .gv {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.gauge .gt { font-size: 25px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.gauge .gs { font-size: 10.5px; color: var(--text-3); margin-top: 4px; }
+.cam-side { flex: 1; display: grid; gap: 9px; }
+.cam-row { display: flex; justify-content: space-between; font-size: 13px; }
+.cam-row .k { color: var(--text-3); }
+.cam-row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.cam-row .v.ok { color: var(--ok); } .cam-row .v.warn { color: var(--warn); } .cam-row .v.err { color: var(--err); }
+.cam-chart { width: 100%; height: 74px; margin-top: 10px; }
+.cam-foot { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 12px; color: var(--text-3); }
+.cam-foot .comp { display: flex; align-items: center; gap: 7px; font-weight: 600; }
+.comp-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--cream-300); flex: none; }
+.comp-dot.on { background: var(--vera-500); box-shadow: 0 0 6px rgba(58,174,131,.7); }
+.comp-dot.on::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(58,174,131,.45);
+  animation: dotPulse 2s infinite;
+}
+/* transform + opacity: se compone en GPU, no repinta */
+@keyframes dotPulse {
+  0%   { transform: scale(.6); opacity: .9; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.alert-banner {
+  display: none; align-items: center; gap: 14px;
+  background: var(--err-soft); border: 1px solid rgba(176,52,44,.45);
+  border-radius: var(--r); padding: 15px 20px; margin-bottom: 20px;
+  font-size: 15px; font-weight: 600; color: #7C231D;
+}
+.alert-banner.show { display: flex; animation: eventIn .4s ease; }
+.alert-banner .icon { font-size: 22px; color: var(--err); }
+
+.alert-log { background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--sh-card); }
+.alert-log .row { display: flex; gap: 14px; align-items: center; padding: 13px 18px; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+.alert-log .row:last-child { border-bottom: none; }
+.alert-log .tm { font-family: var(--mono); font-size: 12px; color: var(--text-3); flex: none; width: 62px; }
+
+/* Responsive básico */
+@media (max-width: 1100px) {
+  .kpis { display: none; }
+  .side-panel { width: 320px; }
+  .veh-detail, .event-feed { width: 330px; }
+}
+@media (max-width: 760px) {
+  .topbar { gap: 10px; padding: 0 14px; }
+  .brand .brand-sub { display: none; }
+  .nav a span { display: none; }
+  .side-panel { left: 10px; right: 10px; width: auto; bottom: auto; max-height: 46%; }
+  .event-feed { display: none; }
+  .veh-detail { left: 10px; right: 10px; width: auto; }
+  .page-body { padding: 18px 14px 40px; }
+}
