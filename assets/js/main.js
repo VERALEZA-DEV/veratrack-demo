@@ -13,18 +13,141 @@
   const BAND = VT.TEMP;             // banda obligatoria 8–12 °C (data.js)
   const $ = s => document.querySelector(s);
 
-  /* ── Mapa base (OSM estándar, como VeraTrack) ── */
+  /* ── Mapa ── */
   const map = L.map('map', {
     zoomControl: true, attributionControl: true,
     maxBounds: [[27, -20], [52, 12]], maxBoundsViscosity: 0.8,
     minZoom: 5, maxZoom: 18,
   });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap', maxZoom: 19,
-    updateWhenIdle: true, updateWhenZooming: false, keepBuffer: 4,
-  }).addTo(map);
   map.fitBounds([[36.0, -9.5], [43.7, 3.3]]);
   map.zoomControl.setPosition('bottomleft');
+
+  /* ── Bases del mapa ────────────────────────────────────────────
+     Dos vistas, con interruptor abajo a la izquierda:
+
+       · Satélite — la foto de Esri World Imagery y, encima, sus capas
+         de referencia transparentes: primero la de transporte
+         (autovías, nacionales y sus rótulos) y después la de lugares.
+         Las tres son libres y sin API key, que es la condición de esta
+         demo (CARTO ya la exige; por eso no está).
+       · Mapa — OSM estándar, el mismo de la app real.
+
+     La referencia de carreteras no es un adorno encima de la foto: la
+     imagen sola es vistosa pero ilegible — sin la malla de autovías no
+     se sabe por dónde va el camión. Con ella puesta, lo que primero
+     destaca de la foto es justo la red viaria, que es lo que se enseña.
+
+     Los dos hosts de Esri (server/services) sirven los mismos tiles: se
+     usan como subdominios para que el navegador abra el doble de
+     conexiones, igual que hace OSM con a/b/c. */
+  const ESRI = 'https://{s}.arcgisonline.com/ArcGIS/rest/services/';
+  const ESRI_SUBS = ['server', 'services'];
+  const BASES = {
+    sat: {
+      label: 'Satélite',
+      url: ESRI + 'World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      subs: ESRI_SUBS, maxZoom: 19,
+      attr: '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+      // (cls solo nombra la capa en el DOM, para reconocerla al depurar)
+      refs: [
+        // carreteras: se adelanta con el picado, es la que da la lectura
+        { url: ESRI + 'Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+          cls: 'vt-roads', prefetch: true },
+        // rótulos de ciudades: a media opacidad, para que orienten sin que sus
+        // líneas de provincia le quiten protagonismo a la red viaria
+        { url: ESRI + 'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+          cls: 'vt-places', opacity: .72 },
+      ],
+      // el oliva del rastro se pierde sobre la foto: ámbar sobre tierra oscura
+      trail: { color: '#FFD84D', weight: 4, opacity: .95, dashArray: '1 7' },
+    },
+    osm: {
+      label: 'Mapa',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subs: 'abc', maxZoom: 19,
+      attr: '&copy; OpenStreetMap',
+      refs: [],
+      trail: { color: '#6A6B27', weight: 3, opacity: .75, dashArray: '1 7' },
+    },
+  };
+  /* Comunes a todas las capas. updateWhenIdle es justo lo que obliga a
+     prefetchTiles (ver más abajo): no se toca sin leer aquello. */
+  const TILE_OPTS = { updateWhenIdle: true, updateWhenZooming: false, keepBuffer: 4 };
+  const BASE_KEY = 'vt_demo_base';
+
+  let baseId = null;
+  let baseTiles = null;         // capa de fondo: es la que vigila el picado
+  let refLayers = [];           // referencias transparentes de la vista activa
+  let trail = null;             // rastro del seleccionado (su color depende de la vista)
+  let TILE_SUBS = '', PREFETCH_URLS = [];   // los usa prefetchTiles
+
+  function setBase(id) {
+    if (!BASES[id] || id === baseId) return;
+    const old = [baseTiles].concat(refLayers).filter(Boolean);
+    const b = BASES[id];
+    baseId = id;
+    TILE_SUBS = b.subs;
+    PREFETCH_URLS = [b.url].concat(b.refs.filter(r => r.prefetch).map(r => r.url));
+
+    baseTiles = L.tileLayer(b.url, Object.assign({
+      attribution: b.attr, maxZoom: b.maxZoom, subdomains: b.subs,
+    }, TILE_OPTS)).addTo(map);
+    // Se añaden después de la base, así que quedan por encima (dentro de un
+    // panel de Leaflet manda el orden del DOM) y en el mismo panel de tiles,
+    // que es el que se desenfoca en el picado: foto y carreteras a una.
+    refLayers = b.refs.map(r => L.tileLayer(r.url, Object.assign({
+      maxZoom: b.maxZoom, subdomains: b.subs, className: r.cls,
+      opacity: r.opacity == null ? 1 : r.opacity,
+    }, TILE_OPTS)).addTo(map));
+
+    /* Las capas viejas se quitan cuando la nueva ya ha pintado: quitándolas
+       antes se ve el fondo desnudo mientras carga el mosaico nuevo. Con tope,
+       porque el 'load' no llega si algún tile se queda por el camino. */
+    if (old.length) {
+      let done = false;
+      const drop = () => {
+        if (done) return;
+        done = true; old.forEach(l => map.removeLayer(l));
+      };
+      baseTiles.once('load', drop);
+      setTimeout(drop, 2000);
+    }
+    if (trail) trail.setStyle(b.trail);
+    map.getContainer().classList.toggle('base-sat', id === 'sat');
+    syncBaseSwitch();
+    try { localStorage.setItem(BASE_KEY, id); } catch (e) { /* modo privado */ }
+  }
+
+  /* Interruptor de vista: dos pastillas grandes para el dedo, encima del
+     zoom (los dos controles comparten la esquina de abajo a la izquierda,
+     que el CSS ya aparta del panel lateral). */
+  let switchEl = null;
+  function syncBaseSwitch() {
+    if (!switchEl) return;
+    switchEl.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('on', b.dataset.base === baseId);
+    });
+  }
+  const baseSwitch = L.control({ position: 'bottomleft' });
+  baseSwitch.onAdd = function () {
+    const el = L.DomUtil.create('div', 'vt-baseswitch');
+    el.innerHTML = Object.keys(BASES).map(id =>
+      `<button type="button" data-base="${id}">${BASES[id].label}</button>`).join('');
+    L.DomEvent.disableClickPropagation(el);
+    el.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      setBase(btn.dataset.base);
+      markInteraction();
+    });
+    switchEl = el;
+    return el;
+  };
+  baseSwitch.addTo(map);
+
+  let savedBase = null;
+  try { savedBase = localStorage.getItem(BASE_KEY); } catch (e) { /* modo privado */ }
+  setBase(BASES[savedBase] ? savedBase : 'sat');
 
   /* ── Cluster de vehículos parados (misma configuración que VeraTrack) ── */
   const clusterGroup = L.markerClusterGroup({
@@ -125,10 +248,165 @@
      un vehículo en seguimiento — un setView a mitad de vuelo lo aborta. */
   let flying = false;
   function flyMap(latlng, zoom, duration) {
+    const jump = zoom - map.getZoom();
     flying = true;
     map.once('moveend', () => { flying = false; });
+    if (jump >= 3) {                             // picado largo: habrá que esperar tiles
+      prefetchTiles(latlng, zoom);
+      startDive(duration * 1000);
+    }
     map.flyTo(latlng, zoom, { duration });
   }
+
+  /* Adelantar los tiles del destino ─────────────────────────────────
+     Este es el arreglo de fondo, no el maquillaje. El layer va con
+     updateWhenIdle, así que Leaflet no pide los tiles del zoom de llegada
+     hasta que el vuelo ha terminado: se aterriza y solo entonces empieza a
+     cargar. Y saltando once niveles de golpe no hay nada intermedio que
+     enseñar mientras tanto — el tile de zoom 5 estirado 2000 veces es un
+     color liso —, así que la espera se ve entera.
+
+     Se piden aquí, al lanzar el vuelo: son exactamente las mismas peticiones
+     que hará Leaflet al aterrizar, solo que con un segundo de ventaja. Al
+     llegar ya están en la caché del navegador y el mosaico entra entero.
+     El desenfoque tapa el trayecto; esto quita casi toda la espera. */
+  const PREFETCH_MAX = 64;      // una pantalla grande son ~40 tiles, más el margen
+  const PREFETCH_PAD = 1;       // un tile de más por cada lado (ver abajo)
+
+  function prefetchTiles(latlng, zoom) {
+    const z = Math.round(zoom);
+    const size = map.getSize();
+    const c = map.project(latlng, z);            // píxeles del mundo a ese zoom
+    const wrap = Math.pow(2, z);                 // tiles por lado
+    // El margen no sobra: el camión sigue rodando durante el vuelo y, con el
+    // seguimiento puesto, el encuadre de llegada no es exactamente este punto.
+    // Sin él se quedaban fuera los tiles del borde, justo los que se notan.
+    const p = PREFETCH_PAD;
+    const x0 = Math.floor((c.x - size.x / 2) / 256) - p, x1 = Math.floor((c.x + size.x / 2) / 256) + p;
+    const y0 = Math.floor((c.y - size.y / 2) / 256) - p, y1 = Math.floor((c.y + size.y / 2) / 256) + p;
+    let n = 0;
+    for (let x = x0; x <= x1 && n < PREFETCH_MAX; x++) {
+      for (let y = y0; y <= y1 && n < PREFETCH_MAX; y++) {
+        if (y < 0 || y >= wrap) continue;        // fuera del mundo por arriba/abajo
+        const wx = ((x % wrap) + wrap) % wrap;   // dar la vuelta al planeta por los lados
+        // Una imagen por capa que se adelanta (en satélite: la foto y las
+        // carreteras). Los rótulos no: pesan poco y llegar medio segundo
+        // tarde no se nota, y así no se triplican las peticiones.
+        PREFETCH_URLS.forEach(url => {
+          const img = new Image();
+          // misma fórmula de subdominio que Leaflet (y sobre la x ya envuelta):
+          // si no coincide la URL al carácter, no hay acierto de caché y esto no sirve
+          img.src = L.Util.template(url, {
+            s: TILE_SUBS[Math.abs(wx + y) % TILE_SUBS.length], z: z, x: wx, y: y,
+          });
+        });
+        n++;
+      }
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     Picado — enfoque de cámara mientras llegan los tiles
+
+     El tile layer va con updateWhenIdle, así que los tiles del zoom de
+     destino no se piden hasta que el vuelo termina: durante el picado se
+     ve el mosaico anterior estirado y al aterrizar el nuevo entra de
+     golpe. Disimularlo con un velo opaco solo cambia un parche por otro;
+     lo que funciona es darle una causa a esa falta de nitidez. Así que el
+     suelo se desenfoca al lanzarse el vuelo, el punto de mira se cierra
+     sobre el vehículo, y todo entra en foco cuando los tiles ya están.
+     El desenfoque no es un adorno: es exactamente lo que oculta el
+     mosaico estirado, y se retira justo cuando ya no hace falta.
+     Los estilos y el porqué de cada capa, en demo.css (§ Picado).
+     ══════════════════════════════════════════════════════════════ */
+  const DIVE_MIN_MS = 700;      // con los tiles en caché el efecto se ve igual
+  const DIVE_MAX_WAIT = 2600;   // si un tile no llega, no se queda borroso
+  const FOCUS_MS = 640;         // lo que tardan en irse viñeta y punto de mira
+
+  const mapEl = map.getContainer();
+  const fx = L.DomUtil.create('div', 'zoomfx', mapEl);
+  fx.innerHTML = '<div class="zfx-pulse"></div><div class="zfx-pulse b"></div>' +
+                 '<div class="zfx-vig"></div><div class="zfx-ring"></div>';
+
+  let diveId = 0;               // un picado nuevo invalida al anterior
+  let diveTimer = null;
+  let diveGuard = null;
+
+  function startDive(flightMs) {
+    const id = ++diveId;
+    clearTimeout(diveTimer); clearTimeout(diveGuard);
+    // Red de seguridad: todo lo de abajo cuelga de que llegue el 'moveend' del
+    // vuelo. Si no llegara (la pestaña se va al fondo a mitad de vuelo y Chrome
+    // congela el requestAnimationFrame que mueve el mapa, por ejemplo), el mapa
+    // se quedaría borroso para siempre. Esto es un panel que pasa el día solo
+    // en una pantalla: el desenfoque tiene que irse sí o sí.
+    diveGuard = setTimeout(() => { if (id === diveId) endDive(); }, flightMs + DIVE_MAX_WAIT);
+    mapEl.classList.remove('diving', 'landing');
+    fx.classList.remove('dive', 'focus');
+    fx.style.setProperty('--dive-ms', Math.round(flightMs) + 'ms');   // la mira cierra al aterrizar
+    void fx.offsetWidth;                       // reinicia las animaciones CSS
+    mapEl.classList.add('diving');
+    fx.classList.add('dive');
+
+    const t0 = performance.now();
+    map.once('moveend', () => {
+      if (id !== diveId) return;
+      // Ya se ha aterrizado: a foco blando mientras se piden los tiles buenos.
+      // Si no, una tanda lenta deja la pantalla plana en desenfoque máximo y
+      // parece que la demo se ha colgado.
+      mapEl.classList.remove('diving'); mapEl.classList.add('landing');
+      whenTilesReady(() => {
+        if (id !== diveId) return;
+        diveTimer = setTimeout(endDive, Math.max(0, DIVE_MIN_MS - (performance.now() - t0)));
+      });
+    });
+  }
+
+  function endDive() {
+    clearTimeout(diveGuard);
+    // sin clases el filtro vuelve solo a su identidad, con la transición larga
+    mapEl.classList.remove('diving', 'landing');
+    fx.classList.remove('dive'); fx.classList.add('focus');
+    diveTimer = setTimeout(() => fx.classList.remove('focus'), FOCUS_MS);
+  }
+
+  /* Leaflet le pone .leaflet-tile-loaded a cada tile cuando llega, así que
+     basta con mirar si queda alguno pendiente. Se consulta el DOM en vez de
+     escuchar el evento 'load' del layer porque ese evento no se dispara si
+     no hubo nada que cargar (tiles ya en caché) y el picado se quedaría
+     esperando. Con tope: un tile puede fallar y no cargar nunca. */
+  function whenTilesReady(cb) {
+    const pane = baseTiles.getContainer() || map.getPane('tilePane');
+    const t0 = performance.now();
+    function check() {
+      const pending = pane.querySelectorAll('.leaflet-tile:not(.leaflet-tile-loaded)').length;
+      if (!pending || performance.now() - t0 > DIVE_MAX_WAIT) cb();
+      else setTimeout(check, 100);
+    }
+    // un respiro antes de la primera consulta: si se mira en el mismo
+    // instante del moveend, los tiles del nuevo zoom aún no están en el DOM
+    // y "no queda ninguno pendiente" sería un falso positivo
+    setTimeout(check, 60);
+  }
+
+  /* Podar los tiles del zoom de salida ──────────────────────────────
+     Cuando el movimiento es un vuelo, Leaflet se salta su propia poda y
+     deja levantada una bandera (_noPrune) que además la bloquea después:
+     los tiles del zoom anterior se quedan estirados por debajo de los
+     nuevos. Con una capa opaca eso da igual — los tapa la foto nueva —,
+     pero las referencias de satélite son transparentes y los rótulos
+     gigantes del zoom viejo se quedan flotando encima del mapa ya
+     aterrizado. Así que al acabar cada movimiento se baja la bandera y
+     se poda a mano; _pruneTiles conserva lo que todavía hace falta, de
+     modo que llamarlo de más nunca deja huecos. */
+  function pruneStaleTiles() {
+    [baseTiles].concat(refLayers).forEach(layer => {
+      if (!layer || !layer._pruneTiles) return;
+      layer._noPrune = false;
+      layer._pruneTiles();
+    });
+  }
+  map.on('moveend', pruneStaleTiles);
 
   /* ── Interpolación de movimiento (suave entre ticks de 5 s) ── */
   let lastTickAt = performance.now();
@@ -294,7 +572,7 @@
   });
 
   /* ── Selección + rastro ── */
-  let trail = null;
+  // 'trail' se declara arriba, con las bases: su estilo cambia con la vista.
 
   function selectVehicle(id, { pan }) {
     const v = VT.sim.vehicles.find(x => x.id === id);
@@ -333,9 +611,7 @@
   function drawTrail(v) {
     const pts = v.history.length > 1 ? v.history : [[v.lat, v.lng]];
     if (trail) { trail.setLatLngs(pts); return; }
-    trail = L.polyline(pts, {
-      color: '#6A6B27', weight: 3, opacity: 0.75, dashArray: '1 7', lineCap: 'round',
-    }).addTo(map);
+    trail = L.polyline(pts, Object.assign({ lineCap: 'round' }, BASES[baseId].trail)).addTo(map);
   }
 
   function closeDetail() {

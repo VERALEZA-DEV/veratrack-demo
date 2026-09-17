@@ -177,6 +177,69 @@ button { font-family: inherit; cursor: pointer; }
 .leaflet-bottom.leaflet-left { left: 404px; }
 @media (max-width: 760px) { .leaflet-bottom.leaflet-left { left: 0; } }
 
+/* ══════════ Vista de satélite ══════════
+   El fondo del contenedor se ve mientras cargan los tiles y por debajo del
+   mar: el azul claro de OSM canta demasiado bajo una foto aérea. */
+.leaflet-container.base-sat { background: #0A1721; }
+
+/* Las carreteras se dejan tal cual las sirve Esri. Aquí hubo un
+   filter: contrast() sobre esa capa para darles más punch y hubo que
+   quitarlo: medido con los camiones moviéndose, pasaba de 1 a 48 fotogramas
+   de cada 240 por encima de 20 ms — un 20 % de tirones. Lo mismo la otra
+   idea, pintar la capa de carreteras dos veces para opacarlas (37 de 240).
+   Sobre la foto ya destacan solas: las autovías van en naranja y las
+   nacionales en blanco, que es justo lo que no tiene el terreno.
+
+   Los rótulos de ciudades van a media opacidad (se pone en main.js, con la
+   capa): orientan, pero sin que sus líneas de provincia compitan con las vías. */
+
+/* Sobre la foto, el verde del furgón se confunde con el campo (el rojo de
+   parado/alerta no: contra este terreno canta solo). Así que en satélite el
+   cuerpo va en azul — `van-azul.png` es el mismo furgón de la app con el tono
+   girado y el logo intacto en blanco; en la vista Mapa se sigue usando el
+   verde de siempre.
+
+   Se cambia la imagen y no se recolorea con `filter: hue-rotate()`: eso
+   obligaría a re-rasterizar los 50 iconos en cada fotograma mientras ruedan
+   (misma razón que la nota de .veh-marker más abajo). Un PNG distinto no
+   cuesta nada.
+
+   El rojo se vuelve a poner después y con más peso: si no, esta regla, que
+   lleva una clase más, se lo comería. */
+.leaflet-container.base-sat .veh-marker .veh-img { background-image: url(../img/van-azul.png); }
+.leaflet-container.base-sat .veh-marker.stopped .veh-img,
+.leaflet-container.base-sat .veh-marker.alert   .veh-img { background-image: url(../img/van-rojo.png); }
+
+/* Sobre la foto el furgón verde se camufla con el campo. Se le pone un halo
+   claro detrás: un óvalo que se pinta una vez con el marcador, no un
+   drop-shadow — ese hay que re-rasterizarlo en cada fotograma y son 50
+   (misma razón que la nota de .veh-marker más abajo). */
+.leaflet-container.base-sat .veh-marker::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: 42px; height: 24px; margin: -12px 0 0 -21px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center,
+    rgba(255, 252, 238, .5) 0%, rgba(255, 252, 238, .24) 44%, rgba(255, 252, 238, 0) 70%);
+}
+
+/* Interruptor de vista — dos pastillas grandes para el dedo, en la esquina
+   de abajo a la izquierda junto al zoom (el CSS de arriba ya aparta esa
+   esquina del panel lateral). */
+.vt-baseswitch {
+  display: flex; gap: 4px; padding: 4px;
+  background: #FDFCF7;                       /* opaco: ver nota en .side-panel */
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-card);
+}
+.vt-baseswitch button {
+  border: none; background: transparent;
+  font-family: var(--font); font-size: 14px; font-weight: 600;
+  color: var(--text-2); padding: 0 20px; height: 40px;
+  border-radius: var(--r-pill); cursor: pointer; white-space: nowrap;
+}
+.vt-baseswitch button.on { background: var(--olive-500); color: #fff; }
+
 /* Panel lateral flotante */
 .side-panel {
   position: absolute; top: 20px; left: 20px; bottom: 20px;
@@ -307,6 +370,127 @@ button { font-family: inherit; cursor: pointer; }
 }
 .leaflet-popup-tip { background: #fff; }
 .leaflet-popup-content { margin: 14px 16px; }
+
+/* ══════════ Picado sobre un vehículo (doble clic) ══════════
+   El mapa no pide los tiles del zoom de destino hasta que el vuelo
+   termina (updateWhenIdle), así que durante el picado se ve el mosaico
+   anterior estirado y al aterrizar el nuevo entra de golpe. En vez de
+   tapar ese momento se hace pasar por el enfoque de una cámara: el
+   suelo se desenfoca al lanzarse el vuelo y recupera el foco cuando los
+   tiles ya han cargado (el JS decide cuándo; ver startDive en main.js).
+
+   Solo se desenfoca el panel de tiles: los camiones, el rastro y la
+   interfaz siguen nítidos, como el HUD de una cámara de seguimiento.
+   Es además lo barato — una sola capa ya compuesta, no 50 iconos.
+
+   Se hace con transición y no con @keyframes a propósito: no se sabe
+   cuánto tarda cada tanda de tiles, así que las fases se solapan a
+   destiempo. Una transición arranca desde el valor que haya en ese
+   momento; unos keyframes empiezan siempre por su primer fotograma y
+   darían un salto de nitidez cada vez que se pisan dos fases.
+
+   Tres pasos: al picar se va al desenfoque fuerte; al aterrizar baja a
+   un foco blando (el mosaico ya no da el estirón, pero aún no están los
+   tiles buenos); y cuando llegan se quitan las clases y el filtro vuelve
+   solo a su identidad — sin filter no queda una capa de más. */
+.leaflet-container .leaflet-tile-pane {
+  transition: filter 620ms cubic-bezier(.16, .84, .3, 1);       /* la vuelta al foco */
+}
+.leaflet-container.diving  .leaflet-tile-pane,
+.leaflet-container.landing .leaflet-tile-pane { transition-duration: 300ms; }
+.leaflet-container.diving  .leaflet-tile-pane { filter: blur(17px) saturate(.84) brightness(1.06); }
+.leaflet-container.landing .leaflet-tile-pane { filter: blur(7px)  saturate(.92) brightness(1.03); }
+
+/* Capas del efecto (las crea main.js dentro del contenedor del mapa).
+   z-index 500: por encima de los paneles de Leaflet (400) y por debajo
+   de los controles (1000), que deben seguir legibles. */
+.zoomfx { position: absolute; inset: 0; z-index: 500; pointer-events: none; overflow: hidden; }
+.zoomfx > div { position: absolute; opacity: 0; }
+
+/* Todo el efecto va en tinta oscura, no en blanco: el mapa de la demo es
+   crema y cualquier trazo claro se pierde encima. */
+
+/* Onda de choque: dos aros que salen del vehículo hacia fuera, que es hacia
+   donde corre todo cuando te acercas.
+
+   Aquí había unas estelas radiales finas y hubo que quitarlas: una capa con
+   mucho detalle que se escala mucho la rasteriza Chrome UNA vez, al tamaño
+   de salida, y al agrandarla el detalle se promedia — las estelas acababan
+   siendo un disco liso que tapaba medio mapa. Un aro no tiene ese problema:
+   no hay detalle fino que promediar. */
+.zoomfx .zfx-pulse {
+  left: 50%; top: 50%; width: 240px; height: 240px; margin: -130px 0 0 -120px;
+  border-radius: 50%; border: 2px solid rgba(20, 38, 31, .4);
+}
+.zoomfx.dive .zfx-pulse   { animation: fxPulse 620ms cubic-bezier(.25, .6, .3, 1) forwards; }
+.zoomfx.dive .zfx-pulse.b { animation-delay: 150ms; }
+@keyframes fxPulse {
+  0%   { opacity: 0;   transform: scale(.12); }
+  15%  { opacity: .85; }
+  100% { opacity: 0;   transform: scale(4.2); }
+}
+
+/* Viñeta: los bordes se cierran al picar y se abren al enfocar.
+   La elipse se mide al 70 % del ancho para que las esquinas del contenedor
+   caigan pasado el último tope y oscurezcan de verdad; medida al 100 % el
+   degradado muere fuera de pantalla y no se ve nada. */
+.zoomfx .zfx-vig {
+  inset: 0;
+  background: radial-gradient(ellipse 70% 70% at 50% 50%,
+    rgba(10, 30, 24, 0) 38%, rgba(10, 30, 24, .26) 72%, rgba(8, 24, 19, .58) 100%);
+  transform: scale(1.45);
+}
+.zoomfx.dive  .zfx-vig { animation: fxVigIn  340ms ease-out forwards; }
+.zoomfx.focus .zfx-vig { animation: fxVigOut 560ms ease-out forwards; }
+@keyframes fxVigIn  { from { opacity: 0; transform: scale(1.45); } to { opacity: 1; transform: scale(1); } }
+@keyframes fxVigOut { from { opacity: 1; transform: scale(1); }    to { opacity: 0; transform: scale(1.12); } }
+
+/* Punto de mira que se cierra sobre el camión mientras dura el vuelo
+   (--dive-ms lo pone main.js con la duración real del vuelo, así el cerco
+   acaba de cerrarse justo al aterrizar). El vuelo deja al vehículo en el
+   centro del contenedor; los 10 px de más suben el cerco del eje a la caja
+   del furgón, que va anclado por las ruedas. */
+.zoomfx .zfx-ring {
+  left: 50%; top: 50%; width: 148px; height: 148px; margin: -84px 0 0 -74px;
+  border-radius: 50%; border: 2px solid rgba(16, 34, 28, .8);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, .3), 0 0 26px rgba(255, 255, 255, .5),
+              inset 0 0 20px rgba(255, 255, 255, .35);
+}
+/* Cerco exterior de puntos: gira mientras se cierra, como una mira al fijar */
+.zoomfx .zfx-ring::before {
+  content: ''; position: absolute; inset: -15px;
+  border-radius: 50%; border: 2px dashed rgba(106, 107, 39, .7);
+}
+.zoomfx.dive .zfx-ring { animation: fxLock var(--dive-ms, 900ms) cubic-bezier(.2, .72, .18, 1) forwards; }
+.zoomfx.dive .zfx-ring::before { animation: fxLockSpin var(--dive-ms, 900ms) cubic-bezier(.2, .72, .18, 1) forwards; }
+/* Acaba fijada (no en cero) y ahí se queda mientras se esperan los tiles:
+   la espera se lee como "el sistema sigue enganchado a este camión" y no
+   como una pantalla en blanco. Se retira al recuperar el foco. */
+@keyframes fxLock {
+  0%   { opacity: 0;  transform: scale(6); }
+  18%  { opacity: 1; }
+  100% { opacity: .6; transform: scale(1); }
+}
+@keyframes fxLockSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(150deg); }
+}
+.zoomfx.focus .zfx-ring { animation: fxUnlock 420ms ease-out forwards; }
+@keyframes fxUnlock {
+  from { opacity: .6; transform: scale(1); }
+  to   { opacity: 0;  transform: scale(.82); }
+}
+
+/* Sobre la foto de satélite el suelo es oscuro y la tinta del picado se
+   pierde: la onda y el punto de mira pasan a blanco, y el cerco de puntos
+   al ámbar del rastro, que es el color con el que la demo señala. */
+.leaflet-container.base-sat .zfx-pulse { border-color: rgba(255, 255, 255, .62); }
+.leaflet-container.base-sat .zfx-ring {
+  border-color: rgba(255, 255, 255, .92);
+  box-shadow: 0 0 0 5px rgba(8, 20, 16, .3), 0 0 26px rgba(0, 0, 0, .5),
+              inset 0 0 20px rgba(255, 255, 255, .18);
+}
+.leaflet-container.base-sat .zfx-ring::before { border-color: rgba(255, 216, 77, .85); }
 
 /* Ficha de vehículo (drawer inferior derecha) */
 .veh-detail {
