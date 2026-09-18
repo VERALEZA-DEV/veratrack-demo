@@ -165,7 +165,7 @@
       plate, country: 'ES',
       model: $('#fModel').value,
       type, typeLabel: VT.TYPES[type].label, isFrigo,
-      cargo: $('#fCargo').value.trim() || (isFrigo ? 'Fruta y verdura' : 'Carga general'),
+      cargo: $('#fCargo').value.trim() || (isFrigo ? 'Flor cortada' : 'Retornables'),
       setpoint: isFrigo ? VT.TEMP.sp : null,
       driver: $('#fDriver').value,
       corridorName: 'Sin asignar', corridor: null,

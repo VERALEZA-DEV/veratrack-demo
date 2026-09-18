@@ -92,10 +92,10 @@ VT.MODELS = [
 
 /* ── Tipos de semirremolque ── */
 VT.TYPES = {
-  frigo:   { label: 'Frigorífico',   icon: '❄' },
+  frigo:   { label: 'Frigorífico',     icon: '❄' },
+  mega:    { label: 'Mega doble piso', icon: '◫' },
   lona:    { label: 'Lona / Tauliner', icon: '▤' },
-  furgon:  { label: 'Furgón seco',   icon: '▢' },
-  cisterna:{ label: 'Cisterna alimentaria', icon: '◍' },
+  furgon:  { label: 'Furgón seco',     icon: '▢' },
 };
 
 /* ── Banda de temperatura de la cadena de frío ─────────────────
@@ -106,18 +106,24 @@ VT.TYPES = {
 VT.TEMP = { min: 8, max: 12, sp: 10, near: 0.5 };
 VT.TEMP.label = `${VT.TEMP.min}–${VT.TEMP.max} °C`;
 
-/* ── Cargas típicas Veraleza ──
-   Todas refrigeradas en la misma banda 8–12 °C: producto sensible al
-   daño por frío, que por debajo de 8 °C también se estropea. */
+/* ── Cargas Veraleza ──
+   Solo se mueven tres cosas: flor cortada, planta viva y retornables.
+   Flor y planta viajan refrigeradas en la banda 8–12 °C: producto
+   sensible al daño por frío, que por debajo de 8 °C también se estropea.
+   Los retornables (carros, cubetas, palets) van en seco. */
 VT.CARGO_FRIGO = [
-  'Plátano de Canarias', 'Cítricos', 'Tomate', 'Pepino',
-  'Calabacín', 'Berenjena', 'Pimiento', 'Judía verde',
-  'Aguacate', 'Mango', 'Piña', 'Patata de consumo',
+  'Flor cortada · rosa', 'Flor cortada · clavel', 'Flor cortada · crisantemo',
+  'Flor cortada · gerbera', 'Ramos y bouquets', 'Verde ornamental',
+  'Planta de interior', 'Planta de exterior', 'Planta en maceta · orquídea',
+  'Planta en maceta · kalanchoe', 'Planta de temporada', 'Esquejes y plantel',
 ].map(name => ({ name, sp: VT.TEMP.sp }));
 VT.CARGO_DRY = [
-  'Aceite de oliva', 'Conservas vegetales', 'Vino embotellado', 'Cereal a granel',
-  'Piensos', 'Almendra', 'Envases y palets', 'Fruta en fresco (ventilado)',
-  'Aceituna de mesa', 'Mosto', 'Garrafas AOVE', 'Material de riego',
+  'Carros daneses (CC) vacíos', 'Baldas y estanterías de carro',
+  'Cubetas de flor cortada', 'Bandejas de plantel',
+  'Palets europeos (EPAL)', 'Jaulas y box pallets',
+  'Cajas retornables apilables', 'Rolls y bases con ruedas',
+  'Contenedores retornables vacíos', 'Macetas y alvéolos retornables',
+  'Capuchas y correas de carro', 'Retorno mixto de vacíos',
 ];
 
 /* ── Matrículas ── */
@@ -165,7 +171,7 @@ VT.buildFleet = function () {
   for (let i = 0; i < 50; i++) {
     const isPT = i % 9 === 4;                       // ~6 matrículas portuguesas
     const isFrigo = i % 5 !== 1 && i % 5 !== 3;     // 30 frigoríficos
-    const type = isFrigo ? 'frigo' : (i % 10 === 1 ? 'cisterna' : (i % 10 === 3 ? 'furgon' : 'lona'));
+    const type = isFrigo ? 'frigo' : (i % 10 === 1 ? 'mega' : (i % 10 === 3 ? 'furgon' : 'lona'));
     const cargo = isFrigo
       ? VT.CARGO_FRIGO[i % VT.CARGO_FRIGO.length]
       : { name: VT.CARGO_DRY[i % VT.CARGO_DRY.length], sp: null };
@@ -210,14 +216,14 @@ VT.buildFleet = function () {
 /* ── Cámaras frigoríficas · Plataforma Logística Veraleza ──
    Todas comparten la banda única 8–12 °C de VT.TEMP. */
 VT.CHAMBERS = [
-  { id: 'C1',  name: 'Cámara 1 · Plátano A',       zone: 'Nave Norte',  hum: 85, vol: 2400 },
-  { id: 'C2',  name: 'Cámara 2 · Plátano B',       zone: 'Nave Norte',  hum: 85, vol: 2400 },
-  { id: 'C3',  name: 'Sala de maduración',         zone: 'Nave Norte',  hum: 90, vol: 620 },
-  { id: 'C4',  name: 'Cámara 3 · Hortícola',       zone: 'Nave Centro', hum: 88, vol: 1800 },
-  { id: 'C5',  name: 'Cámara 4 · Exóticos',        zone: 'Nave Centro', hum: 86, vol: 1500 },
-  { id: 'C6',  name: 'Cámara 5 · Fruta y verdura', zone: 'Nave Sur',    hum: 90, vol: 3200 },
-  { id: 'C7',  name: 'Cámara 6 · Cítricos',        zone: 'Nave Sur',    hum: 88, vol: 2800 },
-  { id: 'C8',  name: 'Sala de trabajo IV gama',    zone: 'Nave Sur',    hum: 75, vol: 950 },
+  { id: 'C1',  name: 'Cámara 1 · Flor cortada A',  zone: 'Nave Norte',  hum: 85, vol: 2400 },
+  { id: 'C2',  name: 'Cámara 2 · Flor cortada B',  zone: 'Nave Norte',  hum: 85, vol: 2400 },
+  { id: 'C3',  name: 'Sala de hidratación',        zone: 'Nave Norte',  hum: 90, vol: 620 },
+  { id: 'C4',  name: 'Cámara 3 · Planta interior', zone: 'Nave Centro', hum: 88, vol: 1800 },
+  { id: 'C5',  name: 'Cámara 4 · Planta exterior', zone: 'Nave Centro', hum: 86, vol: 1500 },
+  { id: 'C6',  name: 'Cámara 5 · Planta en maceta',zone: 'Nave Sur',    hum: 90, vol: 3200 },
+  { id: 'C7',  name: 'Cámara 6 · Esquejes y plantel', zone: 'Nave Sur', hum: 88, vol: 2800 },
+  { id: 'C8',  name: 'Sala de ramos y bouquets',   zone: 'Nave Sur',    hum: 75, vol: 950 },
   { id: 'C9',  name: 'Antecámara · Muelle 1-4',    zone: 'Muelles',     hum: 72, vol: 1100 },
   { id: 'C10', name: 'Antecámara · Muelle 5-8',    zone: 'Muelles',     hum: 72, vol: 1100 },
 ].map(c => ({ ...c, sp: VT.TEMP.sp, min: VT.TEMP.min, max: VT.TEMP.max }));

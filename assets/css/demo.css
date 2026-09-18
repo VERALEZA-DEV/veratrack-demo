@@ -561,6 +561,78 @@ button { font-family: inherit; cursor: pointer; }
 .event .etime { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-3); flex: none; }
 
 /* Botón replegar panel */
+/* ══════════════════════════════════════════════════════════════
+   Trackeador automático (tecla P)
+
+   Chapa de estado arriba en el centro: es el único hueco que queda
+   libre — el panel de flota ocupa la izquierda, el feed de eventos
+   la derecha y la ficha la esquina de abajo. Solo aparece con el
+   modo puesto; el resto del tiempo no hay nada tapando el mapa.
+   La barra fina de abajo es la cuenta atrás del salto siguiente:
+   quien mira la pantalla sabe que el cambio va a llegar y no se
+   lleva el sobresalto.
+   ══════════════════════════════════════════════════════════════ */
+.autotrack {
+  position: absolute; top: 20px; left: 50%; z-index: 1000;
+  display: flex; align-items: center; gap: 13px;
+  padding: 11px 22px 15px; min-width: 320px;
+  background: #FDFCF7;                       /* opaco: ver nota en .side-panel */
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-card);
+  pointer-events: none;                      /* nunca roba un toque al mapa */
+  opacity: 0; transform: translate(-50%, -16px);
+  transition: opacity .32s ease, transform .32s ease, border-color .3s ease;
+}
+.autotrack.on { opacity: 1; transform: translate(-50%, 0); }
+.autotrack.held { border-color: rgba(176, 52, 44, .55); }
+
+/* Piloto: verde latiendo mientras rota, rojo y más rápido si está fijado
+   sobre una alerta. Es lo que se lee de lejos, antes que el texto. */
+.autotrack .at-led {
+  flex: none; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft);
+  animation: atLed 1.7s ease-in-out infinite;
+}
+.autotrack.held .at-led {
+  background: var(--err); box-shadow: 0 0 0 4px var(--err-soft);
+  animation-duration: .75s;
+}
+@keyframes atLed { 50% { opacity: .3; } }
+
+.autotrack .at-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-3);
+}
+.autotrack.held .at-title { color: var(--err); }
+.autotrack .at-key {
+  font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0;
+  color: var(--text-3); background: var(--bg-3);
+  border: 1px solid var(--line-strong); border-radius: 5px;
+  padding: 1px 6px;
+}
+.autotrack .at-sub {
+  margin-top: 2px; font-size: 14px; font-weight: 600;
+  color: var(--text); white-space: nowrap;
+}
+.autotrack .at-sub b { font-family: var(--mono); font-weight: 700; }
+
+/* Cuenta atrás hasta el salto siguiente. Se relanza desde JS en cada
+   vehículo (quitar y reponer la animación); fijado sobre una alerta se
+   para llena y en rojo: no hay salto que contar. */
+.autotrack .at-bar {
+  position: absolute; left: 22px; right: 22px; bottom: 7px;
+  height: 3px; border-radius: 2px; background: var(--bg-3); overflow: hidden;
+}
+.autotrack .at-bar span {
+  display: block; height: 100%; background: var(--olive-500);
+  transform-origin: left center;
+}
+.autotrack.on .at-bar span { animation: atCount var(--track-ms, 7000ms) linear forwards; }
+.autotrack.held .at-bar span { animation: none; transform: scaleX(1); background: var(--err); }
+@keyframes atCount { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
 .panel-toggle {
   position: absolute; top: 20px; left: 20px; z-index: 1001;
   width: 48px; height: 48px; border-radius: 50%;

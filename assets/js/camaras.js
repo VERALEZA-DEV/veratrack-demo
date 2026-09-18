@@ -44,7 +44,7 @@
 
   /* Incidencia guionizada a los ~25 s para que siempre haya algo que enseñar */
   setTimeout(() => {
-    const c = cams[5]; // Cámara 5 · Fruta y verdura
+    const c = cams[5]; // Cámara 5 · Planta en maceta
     if (!c.incident) {
       c.incident = { dir: 1, phase: 'up', peak: c.max + 3.5 };
       addLog('warn', `${c.name}: deriva de temperatura detectada — comprobar evaporador`);

@@ -247,11 +247,15 @@
   /* Vuelo en curso: mientras dura, animate() no recentra el mapa aunque haya
      un vehículo en seguimiento — un setView a mitad de vuelo lo aborta. */
   let flying = false;
-  function flyMap(latlng, zoom, duration) {
+  function flyMap(latlng, zoom, duration, forceDive) {
     const jump = zoom - map.getZoom();
     flying = true;
     map.once('moveend', () => { flying = false; });
-    if (jump >= 3) {                             // picado largo: habrá que esperar tiles
+    /* forceDive son los saltos del trackeador automático: van de camión a
+       camión sin cambiar de zoom (jump 0), así que no entrarían por la regla
+       de aquí abajo — y son justo los que más lo necesitan, porque flyTo
+       cruza media península en arco y el mosaico se estira igual. */
+    if (forceDive || jump >= 3) {                // picado largo: habrá que esperar tiles
       prefetchTiles(latlng, zoom);
       startDive(duration * 1000);
     }
@@ -493,7 +497,7 @@
   function buildCards() {
     const frag = document.createDocumentFragment();
     VT.sim.vehicles.forEach(v => {
-      const glyph = v.isFrigo ? '❄' : (v.type === 'cisterna' ? '◍' : '▤');
+      const glyph = v.isFrigo ? '❄' : (v.type === 'mega' ? '◫' : '▤');
       const root = document.createElement('div');
       root.className = 'vcard';
       root.dataset.id = v.id;
@@ -592,6 +596,10 @@
     $('#vehDetail').classList.add('open');
     drawTrail(v);
     markInteraction();
+    // Con el trackeador puesto, tocar una tarjeta o un camión manda: se adopta
+    // ese vehículo y la cuenta vuelve a empezar. trackAuto marca los saltos que
+    // da el propio modo, que evidentemente no deben reengancharse aquí.
+    if (track.on && !trackAuto) trackAdopt(id);
   }
 
   /* Doble clic sobre un camión: zoom de calle encima de él.
@@ -600,12 +608,12 @@
      queda centrado (el botón de la ficha lo desactiva). */
   const CLOSE_ZOOM = 16;
 
-  function zoomToVehicle(id) {
+  function zoomToVehicle(id, zoom, dur, forceDive) {
     const v = VT.sim.vehicles.find(x => x.id === id);
     if (!v) return;
     followId = vehicleMoving(v) ? id : null;
     selectVehicle(id, { pan: false });
-    flyMap([v.lat, v.lng], Math.min(map.getMaxZoom(), CLOSE_ZOOM), 1.2);
+    flyMap([v.lat, v.lng], Math.min(map.getMaxZoom(), zoom || CLOSE_ZOOM), dur || 1.2, forceDive);
   }
 
   function drawTrail(v) {
@@ -974,10 +982,152 @@
     lastInteraction = Date.now();   // que no se reinicie a sí mismo
   }
   setInterval(() => {
-    if (presentTimer || Date.now() - lastInteraction < 90000) return;
+    if (track.on || presentTimer || Date.now() - lastInteraction < 90000) return;
     presentStep();
     presentTimer = setInterval(presentStep, 18000);
   }, 5000);
+
+  /* ══════════════════════════════════════════════════════════════
+     Trackeador automático — tecla P
+
+     Modo de feria: el centro de control se pasea solo por la flota y se
+     planta encima de cada camión a zoom de calle. El salto usa el mismo
+     picado que ya hace la demo al abrir un vehículo (desenfoque, onda y
+     punto de mira; ver § Picado), pero llevado hasta los tejados: es el
+     plano que hace que la gente se pare delante del stand.
+
+     Dos reglas, y la segunda es la importante:
+       · cada TRACK_MS se salta al vehículo siguiente — cola barajada, así
+         se recorre la flota entera antes de repetir ninguno;
+       · si el vehículo enfocado tiene alerta de temperatura NO se salta:
+         se queda encima hasta que la incidencia se resuelve sola. Y
+         mientras haya alertas en la flota, el salto siguiente va a una de
+         ellas. La demo enseña lo que de verdad importa y no lo abandona
+         a los siete segundos.
+     ══════════════════════════════════════════════════════════════ */
+  const TRACK_MS      = 7000;   // lo que dura cada vehículo en pantalla
+  const TRACK_ZOOM    = 15;     // zoom de calle: se ve la carretera bajo el furgón
+  const TRACK_FLY_S   = 1.7;    // vuelo entre vehículos; deja ~5 s de plano fijo
+  const TRACK_HOLD_MS = 1500;   // cada cuánto se mira si la alerta ya se ha ido
+  const TRACK_IDLE_MS = 2000;   // flota entera parada: reintento
+
+  const track = { on: false, id: null, timer: null, queue: [] };
+  let trackAuto = false;        // marca los saltos del propio modo (ver selectVehicle)
+
+  const atEl = $('#autoTrack'), atSub = $('#atSub'), atBar = $('#atBar');
+
+  function trackToggle() { track.on ? trackStop() : trackStart(); }
+
+  function trackStart() {
+    track.on = true;
+    track.id = null;
+    track.queue = [];
+    stopPresentation();          // el escaparate por inactividad sobra estando este
+    atEl.style.setProperty('--track-ms', TRACK_MS + 'ms');
+    atEl.classList.add('on');
+    trackStep();
+  }
+
+  /* Al salir no se devuelve la vista a la flota a propósito: si alguien
+     pulsa P es para tomar el control, y encontrarse con un vuelo de salida
+     encima sería justo lo contrario. El mapa se queda donde está. */
+  function trackStop() {
+    track.on = false;
+    track.id = null;
+    followId = null;
+    clearTimeout(track.timer); track.timer = null;
+    atEl.classList.remove('on', 'held');
+  }
+
+  function trackArm(ms) {
+    clearTimeout(track.timer);
+    track.timer = setTimeout(trackStep, ms);
+  }
+
+  /* Siguiente vehículo: primero las alertas (las haya donde las haya, incluso
+     paradas en un muelle); si no hay ninguna, la cola barajada, que se rellena
+     al agotarse. Para la rotación normal solo camiones rodando: a zoom de calle
+     uno parado es una foto fija y los siete segundos se hacen eternos. */
+  function trackPick() {
+    const vs = VT.sim.vehicles;
+    const alerts = vs.filter(v => v.tempAlert);
+    if (alerts.length) return alerts[Math.floor(Math.random() * alerts.length)];
+
+    const pool = vs.filter(v => v.state === 'ruta' && v.speed > 10);
+    if (!pool.length) return null;
+    const ok = {};
+    pool.forEach(v => { ok[v.id] = v; });
+
+    // la cola se hizo hace varias vueltas: por el camino habrá quien se haya
+    // parado a descargar, y ese se descarta sin más
+    while (track.queue.length) {
+      const v = ok[track.queue.shift()];
+      if (v && v.id !== track.id) return v;
+    }
+    track.queue = pool.map(v => v.id);
+    for (let i = track.queue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = track.queue[i]; track.queue[i] = track.queue[j]; track.queue[j] = t;
+    }
+    let id = track.queue.shift();
+    if (id === track.id && track.queue.length) id = track.queue.shift();   // no repetir seguido
+    return ok[id];
+  }
+
+  function trackStep() {
+    if (!track.on) return;
+    const cur = track.id && VT.sim.vehicles.find(x => x.id === track.id);
+
+    // Alerta en curso en el vehículo enfocado: no se cambia. Se refresca la
+    // chapa (la temperatura sigue viva) y se vuelve a mirar en un segundo y
+    // medio, hasta que el equipo de frío recupere la banda.
+    if (cur && cur.tempAlert) { trackBadge(cur, true); trackArm(TRACK_HOLD_MS); return; }
+
+    const v = trackPick();
+    if (!v) { trackArm(TRACK_IDLE_MS); return; }
+    track.id = v.id;
+    trackAuto = true;
+    zoomToVehicle(v.id, TRACK_ZOOM, TRACK_FLY_S, true);   // true: picado aunque no cambie el zoom
+    trackAuto = false;
+    trackBadge(v, false);
+    trackArm(TRACK_MS);
+  }
+
+  /* Selección a mano con el modo puesto: se adopta ese vehículo y la cuenta
+     empieza de cero — quien está enseñando la demo no tiene que pelearse con
+     el reloj para que le dé tiempo a contar algo. */
+  function trackAdopt(id) {
+    const v = VT.sim.vehicles.find(x => x.id === id);
+    if (!v) return;
+    track.id = id;
+    trackBadge(v, !!v.tempAlert);
+    trackArm(v.tempAlert ? TRACK_HOLD_MS : TRACK_MS);
+  }
+
+  function trackBadge(v, held) {
+    atEl.classList.toggle('held', !!held);
+    atSub.innerHTML = held
+      ? `<b></b> · <span></span> · seguimiento fijado`
+      : `<b></b> · <span></span>`;
+    atSub.querySelector('b').textContent = v.plate;
+    atSub.querySelector('span').textContent = held
+      ? `${v.temp.toFixed(1)} °C fuera de banda`
+      : (v.isFrigo ? `${v.cargo} · ${v.temp.toFixed(1)} °C` : v.cargo);
+    // relanzar la cuenta atrás de la barra desde el principio
+    atBar.style.animation = 'none'; void atBar.offsetWidth; atBar.style.animation = '';
+  }
+
+  /* La tecla, con la búsqueda respetada: escribir una 'p' en el buscador no
+     puede lanzar el modo. Esc también sale, que es lo que prueba todo el
+     mundo cuando algo se mueve solo. */
+  window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    const k = (e.key || '').toLowerCase();
+    if (k === 'p') { e.preventDefault(); trackToggle(); }
+    else if (k === 'escape' && track.on) trackStop();
+  });
 
   /* ── Arranque ── */
   (async function boot() {
